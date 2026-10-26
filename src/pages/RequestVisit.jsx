@@ -1,0 +1,346 @@
+
+import { useState } from 'react'
+import {
+  CalendarDays,
+  Clock,
+  MapPin,
+  ClipboardList,
+  CheckCircle2,
+  ArrowLeft,
+  Send,
+} from 'lucide-react'
+import { Link } from 'react-router-dom'
+import VisitorNavbar from '../components/VisitorNavbar'
+
+function RequestVisit() {
+  const [form, setForm] = useState({
+    destination: '',
+    purpose: '',
+    visitDate: '',
+    visitTime: '',
+    notes: '',
+  })
+
+  const [submitted, setSubmitted] = useState(false)
+  const [requestId, setRequestId] = useState('')
+
+  const today = new Date().toLocaleDateString('en-CA')
+
+  function handleChange(event) {
+    const { name, value } = event.target
+
+    setForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }))
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault()
+
+    const id = `VIS-${Date.now().toString().slice(-6)}`
+
+    const newRequest = {
+      ...form,
+      id,
+      status: 'Pending',
+      submittedAt: new Date().toISOString(),
+    }
+
+    const existingRequests = JSON.parse(
+      localStorage.getItem('visitorRequests') || '[]',
+    )
+
+    localStorage.setItem(
+      'visitorRequests',
+      JSON.stringify([...existingRequests, newRequest]),
+    )
+
+    setRequestId(id)
+    setSubmitted(true)
+  }
+
+  function handleNewRequest() {
+    setForm({
+      destination: '',
+      purpose: '',
+      visitDate: '',
+      visitTime: '',
+      notes: '',
+    })
+
+    setRequestId('')
+    setSubmitted(false)
+  }
+
+  return (
+    <VisitorNavbar>
+      <div className="mx-auto max-w-4xl">
+        <Link
+          to="/visitor/dashboard"
+          className="mb-5 inline-flex items-center gap-2 text-sm text-gray-500 transition hover:text-blue-600"
+        >
+          <ArrowLeft size={17} />
+          Back to dashboard
+        </Link>
+
+        <div className="mb-7">
+          <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-blue-600">
+            Appointments
+          </p>
+
+          <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+            Request a Visit
+          </h2>
+
+          <p className="mt-2 text-sm text-gray-500">
+            Complete the form below to request an appointment.
+            Staff will review your request.
+          </p>
+        </div>
+
+        {submitted ? (
+          <div className="rounded-2xl border border-green-200 bg-white p-6 sm:p-10">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-50 text-green-600">
+              <CheckCircle2 size={36} />
+            </div>
+
+            <div className="mt-5 text-center">
+              <h3 className="text-xl font-bold text-gray-900">
+                Request Submitted Successfully!
+              </h3>
+
+              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">
+                Your appointment request has been saved in this
+                browser and is awaiting staff review.
+              </p>
+
+              <div className="mx-auto mt-6 max-w-sm rounded-xl bg-gray-50 p-5 text-left">
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  Request reference
+                </p>
+
+                <p className="mt-1 text-xl font-bold text-blue-700">
+                  {requestId}
+                </p>
+
+                <div className="mt-4 flex items-center justify-between border-t border-gray-200 pt-4">
+                  <span className="text-sm text-gray-500">Status</span>
+                  <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                    Pending
+                  </span>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="text-sm text-gray-500">Destination</span>
+                  <span className="text-sm font-medium text-gray-800">
+                    {form.destination}
+                  </span>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="text-sm text-gray-500">Visit date</span>
+                  <span className="text-sm font-medium text-gray-800">
+                    {form.visitDate}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+                <Link
+                  to="/visitor/requests"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+                >
+                  <ClipboardList size={17} />
+                  View My Requests
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={handleNewRequest}
+                  className="rounded-lg border border-gray-300 px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                >
+                  Make Another Request
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <form
+            onSubmit={handleSubmit}
+            className="overflow-hidden rounded-2xl border border-gray-200 bg-white"
+          >
+            <div className="border-b border-gray-100 p-5 sm:p-7">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-blue-50 p-2.5 text-blue-600">
+                  <CalendarDays size={22} />
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-gray-900">
+                    Appointment Information
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Enter the details of your planned visit.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6 p-5 sm:p-7">
+              <div>
+                <label
+                  htmlFor="destination"
+                  className="mb-2 block text-sm font-medium text-gray-700"
+                >
+                  Destination / Department <span className="text-red-500">*</span>
+                </label>
+
+                <div className="relative">
+                  <MapPin
+                    size={18}
+                    className="absolute left-3 top-3.5 text-gray-400"
+                  />
+
+                  <select
+                    id="destination"
+                    name="destination"
+                    value={form.destination}
+                    onChange={handleChange}
+                    required
+                    className="w-full appearance-none rounded-lg border border-gray-300 bg-white py-3 pl-10 pr-4 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="">Select a destination</option>
+                    <option value="Human Resources">Human Resources</option>
+                    <option value="IT Department">IT Department</option>
+                    <option value="Finance Department">Finance Department</option>
+                    <option value="Administration">Administration</option>
+                    <option value="Management">Management</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="purpose"
+                  className="mb-2 block text-sm font-medium text-gray-700"
+                >
+                  Purpose of Visit <span className="text-red-500">*</span>
+                </label>
+
+                <textarea
+                  id="purpose"
+                  name="purpose"
+                  value={form.purpose}
+                  onChange={handleChange}
+                  required
+                  minLength={5}
+                  maxLength={500}
+                  rows={3}
+                  placeholder="Explain why you want to visit..."
+                  className="w-full resize-y rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+
+                <p className="mt-1 text-right text-xs text-gray-400">
+                  {form.purpose.length}/500 characters
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="visitDate"
+                    className="mb-2 block text-sm font-medium text-gray-700"
+                  >
+                    Preferred Date <span className="text-red-500">*</span>
+                  </label>
+
+                  <div className="relative">
+                    <CalendarDays
+                      size={18}
+                      className="absolute left-3 top-3.5 text-gray-400"
+                    />
+
+                    <input
+                      id="visitDate"
+                      name="visitDate"
+                      type="date"
+                      min={today}
+                      value={form.visitDate}
+                      onChange={handleChange}
+                      required
+                      className="w-full rounded-lg border border-gray-300 bg-white py-3 pl-10 pr-3 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="visitTime"
+                    className="mb-2 block text-sm font-medium text-gray-700"
+                  >
+                    Preferred Time <span className="text-red-500">*</span>
+                  </label>
+
+                  <div className="relative">
+                    <Clock
+                      size={18}
+                      className="absolute left-3 top-3.5 text-gray-400"
+                    />
+
+                    <input
+                      id="visitTime"
+                      name="visitTime"
+                      type="time"
+                      value={form.visitTime}
+                      onChange={handleChange}
+                      required
+                      className="w-full rounded-lg border border-gray-300 bg-white py-3 pl-10 pr-3 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="notes"
+                  className="mb-2 block text-sm font-medium text-gray-700"
+                >
+                  Additional Notes <span className="text-gray-400">(Optional)</span>
+                </label>
+
+                <textarea
+                  id="notes"
+                  name="notes"
+                  value={form.notes}
+                  onChange={handleChange}
+                  maxLength={1000}
+                  rows={3}
+                  placeholder="Any additional information for the staff..."
+                  className="w-full resize-y rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col-reverse gap-3 border-t border-gray-100 bg-gray-50 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+              <p className="text-xs text-gray-500">
+                <span className="text-red-500">*</span> Required fields
+              </p>
+
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                <Send size={17} />
+                Submit Request
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </VisitorNavbar>
+  )
+}
+
+export default RequestVisit
