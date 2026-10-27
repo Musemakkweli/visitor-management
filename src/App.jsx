@@ -13,6 +13,10 @@ import VisitorDashboard from './pages/VisitorDashboard'
 import RequestVisit from './pages/RequestVisit'
 import MyRequests from './pages/MyRequests'
 import VisitorProfile from './pages/VisitorProfile'
+import Visitors from './pages/Visitors'
+import VisitRequests from './pages/VisitRequests'
+import VisitHistory from './pages/VisitHistory'
+import Settings from './pages/Settings'
 
 function App() {
   return (
@@ -26,6 +30,10 @@ function App() {
         <Route path="/visitor/request" element={<RequestVisit />} />
         <Route path="/visitor/requests" element={<MyRequests />} />
         <Route path="/visitor/profile" element={<VisitorProfile />} />
+        <Route path="/admin/visitors" element={<Visitors />} />
+        <Route path="/admin/requests" element={<VisitRequests />} />
+        <Route path="/admin/history" element={<VisitHistory />} />
+        <Route path="/admin/settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

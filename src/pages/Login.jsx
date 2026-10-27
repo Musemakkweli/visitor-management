@@ -7,8 +7,8 @@ export default function Login() {
 
   function handleSubmit(event) {
     event.preventDefault()
-    navigate('/visitor/dashboard')
-   // navigate('/admin/dashboard')
+    // navigate('/visitor/dashboard')
+       navigate('/admin/dashboard')
   }
 
   return (
@@ -112,7 +112,8 @@ export default function Login() {
 <button
   type="submit"
   className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700"
-  onClick={() => navigate('/visitor/dashboard')}
+ // onClick={() => navigate('/visitor/dashboard')}
+  onClick={() => navigate('/admin/dashboard')}
 >
   Sign in
 </button>
