@@ -1,5 +1,5 @@
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Search,
@@ -13,19 +13,76 @@ import {
   ClipboardList,
 } from 'lucide-react'
 import VisitorNavbar from '../components/VisitorNavbar'
+import { apiRequest } from '../api/api'
+
+function formatDate(dateValue) {
+  if (!dateValue) return 'Not available'
+
+  const [year, month, day] = dateValue.split('-')
+  const date = new Date(Number(year), Number(month) - 1, Number(day))
+
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+function formatTime(timeValue) {
+  if (!timeValue) return ''
+
+  const [hours, minutes] = timeValue.split(':')
+  const date = new Date()
+
+  date.setHours(Number(hours), Number(minutes), 0, 0)
+
+  return date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+function formatStatus(status) {
+  if (!status) return 'Pending'
+
+  return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
+}
 
 function MyRequests() {
-  const [requests, setRequests] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('visitorRequests') || '[]')
-    } catch {
-      return []
-    }
-  })
+  const [requests, setRequests] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [selectedRequest, setSelectedRequest] = useState(null)
+
+  // Load the visitor's requests from FastAPI
+  useEffect(() => {
+    async function loadRequests() {
+      try {
+        setLoading(true)
+        setError('')
+
+        const result = await apiRequest('/appointments/my-requests')
+
+        setRequests(
+          Array.isArray(result)
+            ? result.map((request) => ({
+                ...request,
+                status: formatStatus(request.status),
+              }))
+            : []
+        )
+      } catch (err) {
+        setError(err.message || 'Unable to load your appointment requests.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadRequests()
+  }, [])
 
   const statusStyles = {
     Pending: 'bg-amber-50 text-amber-700',
@@ -39,7 +96,7 @@ function MyRequests() {
     const query = search.toLowerCase()
 
     const matchesSearch = [
-      request.id,
+      request.request_number,
       request.destination,
       request.purpose,
     ]
@@ -53,25 +110,10 @@ function MyRequests() {
     return matchesSearch && matchesStatus
   })
 
-  function cancelRequest(id) {
-    if (!window.confirm('Are you sure you want to cancel this request?')) {
-      return
-    }
-
-    const updated = requests.map((request) =>
-      request.id === id
-        ? { ...request, status: 'Cancelled' }
-        : request,
-    )
-
-    setRequests(updated)
-    localStorage.setItem('visitorRequests', JSON.stringify(updated))
-    setSelectedRequest(null)
-  }
-
   return (
     <VisitorNavbar>
       <div className="mx-auto max-w-7xl">
+
         {/* Page heading */}
         <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
@@ -101,6 +143,16 @@ function MyRequests() {
           </Link>
         </div>
 
+        {/* Error message */}
+        {error && (
+          <div
+            role="alert"
+            className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+          >
+            {error}
+          </div>
+        )}
+
         {/* Request list */}
         <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
           <div className="flex flex-col gap-4 border-b border-gray-200 p-5 md:flex-row md:items-center md:justify-between">
@@ -108,9 +160,11 @@ function MyRequests() {
               <h3 className="font-semibold text-gray-900">
                 Appointment History
               </h3>
+
               <p className="mt-1 text-sm text-gray-500">
-                {filteredRequests.length} request
-                {filteredRequests.length === 1 ? '' : 's'} found
+                {loading
+                  ? 'Loading your requests...'
+                  : `${filteredRequests.length} request${filteredRequests.length === 1 ? '' : 's'} found`}
               </p>
             </div>
 
@@ -120,6 +174,7 @@ function MyRequests() {
                   size={17}
                   className="absolute left-3 top-3 text-gray-400"
                 />
+
                 <input
                   type="search"
                   value={search}
@@ -146,7 +201,11 @@ function MyRequests() {
             </div>
           </div>
 
-          {filteredRequests.length === 0 ? (
+          {loading ? (
+            <div className="px-5 py-16 text-center text-sm text-gray-500">
+              Loading your appointment requests...
+            </div>
+          ) : filteredRequests.length === 0 ? (
             <div className="px-5 py-16 text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-gray-500">
                 <ClipboardList size={26} />
@@ -189,10 +248,13 @@ function MyRequests() {
 
                 <tbody className="divide-y divide-gray-100">
                   {filteredRequests.map((request) => (
-                    <tr key={request.id} className="transition hover:bg-gray-50">
+                    <tr
+                      key={request.id}
+                      className="transition hover:bg-gray-50"
+                    >
                       <td className="px-5 py-4">
                         <p className="font-semibold text-gray-900">
-                          {request.id}
+                          {request.request_number}
                         </p>
                         <p className="mt-1 text-xs text-gray-500">
                           Appointment request
@@ -209,9 +271,11 @@ function MyRequests() {
                       </td>
 
                       <td className="px-5 py-4">
-                        <p className="text-gray-800">{request.visitDate}</p>
+                        <p className="text-gray-800">
+                          {formatDate(request.visit_date)}
+                        </p>
                         <p className="mt-1 text-xs text-gray-500">
-                          {request.visitTime}
+                          {formatTime(request.visit_time)}
                         </p>
                       </td>
 
@@ -243,7 +307,7 @@ function MyRequests() {
             </div>
           )}
 
-          {filteredRequests.length > 0 && (
+          {!loading && filteredRequests.length > 0 && (
             <div className="border-t border-gray-100 px-5 py-3">
               <p className="text-xs text-gray-500">
                 Showing {filteredRequests.length} of {requests.length} requests
@@ -275,11 +339,12 @@ function MyRequests() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
                   Appointment details
                 </p>
+
                 <h3
                   id="request-details-title"
                   className="mt-1 text-xl font-bold text-gray-900"
                 >
-                  {selectedRequest.id}
+                  {selectedRequest.request_number}
                 </h3>
               </div>
 
@@ -317,7 +382,7 @@ function MyRequests() {
                   <div>
                     <p className="text-xs text-gray-500">Preferred date</p>
                     <p className="mt-1 text-sm font-medium text-gray-800">
-                      {selectedRequest.visitDate}
+                      {formatDate(selectedRequest.visit_date)}
                     </p>
                   </div>
                 </div>
@@ -327,23 +392,15 @@ function MyRequests() {
                   <div>
                     <p className="text-xs text-gray-500">Preferred time</p>
                     <p className="mt-1 text-sm font-medium text-gray-800">
-                      {selectedRequest.visitTime}
+                      {formatTime(selectedRequest.visit_time)}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {selectedRequest.notes && (
-                <div>
-                  <p className="text-xs text-gray-500">Additional notes</p>
-                  <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-gray-800">
-                    {selectedRequest.notes}
-                  </p>
-                </div>
-              )}
-
               <div className="flex items-center justify-between border-t border-gray-100 pt-4">
                 <span className="text-sm text-gray-500">Current status</span>
+
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-semibold ${
                     statusStyles[selectedRequest.status] ||
@@ -353,16 +410,6 @@ function MyRequests() {
                   {selectedRequest.status}
                 </span>
               </div>
-
-              {selectedRequest.status === 'Pending' && (
-                <button
-                  type="button"
-                  onClick={() => cancelRequest(selectedRequest.id)}
-                  className="w-full rounded-lg border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50"
-                >
-                  Cancel Request
-                </button>
-              )}
             </div>
           </div>
         </div>

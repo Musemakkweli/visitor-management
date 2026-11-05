@@ -1,8 +1,7 @@
 
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-
-const API_URL = 'http://127.0.0.1:8000'
+import { loginUser } from '../api/authApi'
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
@@ -25,39 +24,24 @@ export default function Login() {
     try {
       setLoading(true)
 
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(loginData),
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        const message = Array.isArray(result.detail)
-          ? result.detail.map((item) => item.msg).join(', ')
-          : result.detail || 'Login failed. Please check your details.'
-
-        throw new Error(message)
-      }
+      const result = await loginUser(loginData)
 
       // Save login information
       localStorage.setItem('access_token', result.access_token)
       localStorage.setItem('user', JSON.stringify(result.user))
 
-      // Redirect according to the actual account role
+      // Redirect according to account role
       if (result.user.role === 'visitor') {
         navigate('/visitor/dashboard')
       } else if (result.user.role === 'receptionist') {
-        navigate('/admin/dashboard')
+        navigate('/receptionist/dashboard')
       } else if (result.user.role === 'admin') {
         navigate('/admin/dashboard')
       } else {
-        setError('Your account has an unrecognized role. Contact the administrator.')
+        setError(
+          'Your account has an unrecognized role. Contact the administrator.'
+        )
       }
-
     } catch (err) {
       setError(
         err.message === 'Failed to fetch'
@@ -80,6 +64,7 @@ export default function Login() {
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-xl font-bold">
                 V
               </div>
+
               <span className="text-xl font-bold">
                 Visitor Management
               </span>
@@ -107,6 +92,7 @@ export default function Login() {
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 font-bold text-white">
                 V
               </div>
+
               <span className="font-bold text-slate-900">
                 Visitor Management
               </span>
@@ -123,27 +109,24 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
 
-            {/* Email or employee number */}
             <div>
               <label
                 htmlFor="identifier"
                 className="mb-2 block text-sm font-medium text-slate-700"
               >
-                Email address 
+                Email address
               </label>
 
               <input
                 id="identifier"
                 name="identifier"
                 type="text"
-                placeholder="Enter email "
                 autoComplete="username"
                 required
                 className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
               />
             </div>
 
-            {/* Password */}
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <label
@@ -185,7 +168,6 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Error message */}
             {error && (
               <p
                 role="alert"
@@ -195,7 +177,6 @@ export default function Login() {
               </p>
             )}
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
@@ -203,7 +184,6 @@ export default function Login() {
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
-
           </form>
 
           <p className="mt-7 text-center text-sm text-slate-600">

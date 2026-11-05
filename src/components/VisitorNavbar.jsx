@@ -6,6 +6,7 @@ import {
   House,
   CalendarPlus,
   ClipboardList,
+  MessageSquare,
   UserRound,
   Menu,
   X,
@@ -20,11 +21,12 @@ function VisitorNavbar({ children }) {
   const [collapsed, setCollapsed] = useState(false)
 
   const navItems = [
-    { name: 'Home', path: '/visitor/dashboard', icon: House },
-    { name: 'Request a Visit', path: '/visitor/request', icon: CalendarPlus },
-    { name: 'My Requests', path: '/visitor/requests', icon: ClipboardList },
-    { name: 'My Profile', path: '/visitor/profile', icon: UserRound },
-  ]
+  { name: 'Home', path: '/visitor/dashboard', icon: House },
+  { name: 'Request a Visit', path: '/visitor/request', icon: CalendarPlus },
+  { name: 'My Requests', path: '/visitor/requests', icon: ClipboardList },
+  { name: 'Responses', path: '/visitor/responses', icon: MessageSquare },
+  { name: 'My Profile', path: '/visitor/profile', icon: UserRound },
+]
 
   function handleLogout() {
     localStorage.removeItem('token')

@@ -1,8 +1,7 @@
 
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-
-const API_URL = 'http://127.0.0.1:8000'
+import { signupUser } from '../api/authApi'
 
 export default function Signup() {
   const [showPassword, setShowPassword] = useState(false)
@@ -42,23 +41,7 @@ export default function Signup() {
     try {
       setLoading(true)
 
-      const response = await fetch(`${API_URL}/auth/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(signupData),
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        const message = Array.isArray(result.detail)
-          ? result.detail.map((item) => item.msg).join(', ')
-          : result.detail || 'Registration failed.'
-
-        throw new Error(message)
-      }
+      await signupUser(signupData)
 
       alert('Account created successfully! Please sign in.')
       navigate('/login')
@@ -95,6 +78,7 @@ export default function Signup() {
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-lg font-bold">
                 V
               </div>
+
               <span className="text-lg font-bold">
                 Visitor Management
               </span>
@@ -121,6 +105,7 @@ export default function Signup() {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 font-bold text-white">
               V
             </div>
+
             <span className="font-bold text-slate-900">
               Visitor Management
             </span>
@@ -156,6 +141,7 @@ export default function Signup() {
                 >
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-xl">👤</span>
+
                     <span className={`h-4 w-4 rounded-full border-2 ${
                       accountType === 'visitor'
                         ? 'border-blue-600 bg-blue-600 ring-2 ring-blue-200'
@@ -166,6 +152,7 @@ export default function Signup() {
                   <p className="text-sm font-semibold text-slate-900">
                     Visitor
                   </p>
+
                   <p className="mt-1 text-xs text-slate-500">
                     For guests and visitors
                   </p>
@@ -183,6 +170,7 @@ export default function Signup() {
                 >
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-xl">💼</span>
+
                     <span className={`h-4 w-4 rounded-full border-2 ${
                       accountType === 'employee'
                         ? 'border-blue-600 bg-blue-600 ring-2 ring-blue-200'
@@ -193,6 +181,7 @@ export default function Signup() {
                   <p className="text-sm font-semibold text-slate-900">
                     Employee
                   </p>
+
                   <p className="mt-1 text-xs text-slate-500">
                     For organization staff
                   </p>
@@ -205,6 +194,7 @@ export default function Signup() {
               <label htmlFor="fullName" className={labelClass}>
                 Full name
               </label>
+
               <input
                 id="fullName"
                 name="fullName"
@@ -223,6 +213,7 @@ export default function Signup() {
                 <label htmlFor="employeeNumber" className={labelClass}>
                   Employee number
                 </label>
+
                 <input
                   id="employeeNumber"
                   name="employeeNumber"
@@ -231,6 +222,7 @@ export default function Signup() {
                   required
                   className={inputClass}
                 />
+
                 <p className="mt-1 text-xs text-slate-500">
                   Your employee number must be authorized by the organization.
                 </p>
@@ -242,6 +234,7 @@ export default function Signup() {
               <label htmlFor="signupEmail" className={labelClass}>
                 Email address
               </label>
+
               <input
                 id="signupEmail"
                 name="email"
@@ -258,6 +251,7 @@ export default function Signup() {
               <label htmlFor="signupPassword" className={labelClass}>
                 Password
               </label>
+
               <div className="relative">
                 <input
                   id="signupPassword"
@@ -269,6 +263,7 @@ export default function Signup() {
                   required
                   className={`${inputClass} pr-16`}
                 />
+
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -284,6 +279,7 @@ export default function Signup() {
               <label htmlFor="confirmPassword" className={labelClass}>
                 Confirm password
               </label>
+
               <div className="relative">
                 <input
                   id="confirmPassword"
@@ -295,6 +291,7 @@ export default function Signup() {
                   required
                   className={`${inputClass} pr-16`}
                 />
+
                 <button
                   type="button"
                   onClick={() =>
@@ -314,6 +311,7 @@ export default function Signup() {
                 required
                 className="mt-1 h-4 w-4 shrink-0 accent-blue-600"
               />
+
               <span>
                 I agree to the terms of service and privacy policy.
               </span>
@@ -341,6 +339,7 @@ export default function Signup() {
 
           <p className="mt-5 text-center text-sm text-slate-600">
             Already have an account?{' '}
+
             <Link
               to="/login"
               className="font-semibold text-blue-600 hover:text-blue-800"

@@ -1,4 +1,5 @@
 
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   CalendarDays,
@@ -11,49 +12,99 @@ import {
   MapPin,
 } from 'lucide-react'
 import VisitorNavbar from '../components/VisitorNavbar'
+import { apiRequest } from '../api/api'
 
-const appointments = [
-  {
-    id: 'VIS-001',
-    destination: 'IT Department',
-    purpose: 'Discuss a technical issue',
-    date: '28 Oct 2026',
-    time: '10:00 AM',
-    status: 'Pending',
-  },
-  {
-    id: 'VIS-002',
-    destination: 'Human Resources',
-    purpose: 'Submit documents',
-    date: '30 Oct 2026',
-    time: '02:00 PM',
-    status: 'Approved',
-  },
-]
+const emptyStats = {
+  total_requests: 0,
+  pending: 0,
+  approved: 0,
+  rejected: 0,
+}
+
+function formatDate(dateValue) {
+  if (!dateValue) return 'Not available'
+
+  const [year, month, day] = dateValue.split('-')
+  const date = new Date(Number(year), Number(month) - 1, Number(day))
+
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+function formatTime(timeValue) {
+  if (!timeValue) return ''
+
+  const [hours, minutes] = timeValue.split(':')
+  const date = new Date()
+
+  date.setHours(Number(hours), Number(minutes), 0, 0)
+
+  return date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+function formatStatus(status) {
+  if (!status) return 'Pending'
+
+  return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
+}
 
 function VisitorHome() {
+  const [statistics, setStatistics] = useState(emptyStats)
+  const [appointments, setAppointments] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const storedUser = JSON.parse(localStorage.getItem('user') || '{}')
+  const visitorName = storedUser.full_name || 'Visitor'
+
+  useEffect(() => {
+    async function loadDashboard() {
+      try {
+        setLoading(true)
+        setError('')
+
+        const result = await apiRequest('/visitors/me/dashboard')
+
+        setStatistics(result.statistics || emptyStats)
+        setAppointments(result.recent_requests || [])
+      } catch (err) {
+        setError(err.message || 'Unable to load your dashboard.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadDashboard()
+  }, [])
+
   const stats = [
     {
       title: 'Total Requests',
-      value: appointments.length,
+      value: statistics.total_requests,
       icon: ClipboardList,
       color: 'bg-blue-50 text-blue-600',
     },
     {
       title: 'Pending',
-      value: appointments.filter((item) => item.status === 'Pending').length,
+      value: statistics.pending,
       icon: Clock,
       color: 'bg-amber-50 text-amber-600',
     },
     {
       title: 'Approved',
-      value: appointments.filter((item) => item.status === 'Approved').length,
+      value: statistics.approved,
       icon: CheckCircle2,
       color: 'bg-green-50 text-green-600',
     },
     {
       title: 'Rejected',
-      value: appointments.filter((item) => item.status === 'Rejected').length,
+      value: statistics.rejected,
       icon: XCircle,
       color: 'bg-red-50 text-red-600',
     },
@@ -80,7 +131,7 @@ function VisitorHome() {
           </p>
 
           <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">
-            Welcome back!
+            Welcome back, {visitorName}!
           </h2>
 
           <p className="mt-2 text-sm text-gray-500">
@@ -96,6 +147,15 @@ function VisitorHome() {
           Request a Visit
         </Link>
       </section>
+
+      {error && (
+        <div
+          role="alert"
+          className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+        >
+          {error}
+        </div>
+      )}
 
       <section className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => {
@@ -117,7 +177,7 @@ function VisitorHome() {
               </div>
 
               <p className="mt-4 text-3xl font-bold text-gray-900">
-                {stat.value}
+                {loading ? '...' : stat.value}
               </p>
             </div>
           )
@@ -186,36 +246,67 @@ function VisitorHome() {
             </thead>
 
             <tbody className="divide-y divide-gray-100">
-              {appointments.map((appointment) => (
-                <tr key={appointment.id} className="hover:bg-gray-50">
-                  <td className="px-5 py-4 font-medium text-gray-900">
-                    {appointment.id}
-                  </td>
-
-                  <td className="px-5 py-4">
-                    <p className="font-medium text-gray-800">
-                      {appointment.destination}
-                    </p>
-
-                    <p className="mt-1 text-xs text-gray-500">
-                      {appointment.purpose}
-                    </p>
-                  </td>
-
-                  <td className="px-5 py-4 text-gray-600">
-                    <p>{appointment.date}</p>
-                    <p className="mt-1 text-xs">{appointment.time}</p>
-                  </td>
-
-                  <td className="px-5 py-4">
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusStyle(appointment.status)}`}
-                    >
-                      {appointment.status}
-                    </span>
+              {loading ? (
+                <tr>
+                  <td colSpan="4" className="px-5 py-8 text-center text-gray-500">
+                    Loading your requests...
                   </td>
                 </tr>
-              ))}
+              ) : appointments.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="px-5 py-8 text-center text-gray-500">
+                    You have not submitted any visit requests yet.
+                    <div className="mt-2">
+                      <Link
+                        to="/visitor/request"
+                        className="font-semibold text-blue-600 hover:text-blue-800"
+                      >
+                        Request your first visit
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                appointments.map((appointment) => {
+                  const status = formatStatus(appointment.status)
+
+                  return (
+                    <tr
+                      key={appointment.id}
+                      className="hover:bg-gray-50"
+                    >
+                      <td className="px-5 py-4 font-medium text-gray-900">
+                        {appointment.request_number}
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <p className="font-medium text-gray-800">
+                          {appointment.destination}
+                        </p>
+
+                        <p className="mt-1 text-xs text-gray-500">
+                          {appointment.purpose}
+                        </p>
+                      </td>
+
+                      <td className="px-5 py-4 text-gray-600">
+                        <p>{formatDate(appointment.visit_date)}</p>
+                        <p className="mt-1 text-xs">
+                          {formatTime(appointment.visit_time)}
+                        </p>
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusStyle(status)}`}
+                        >
+                          {status}
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
             </tbody>
           </table>
         </div>
